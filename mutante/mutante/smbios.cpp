@@ -12,14 +12,16 @@
  */
 char* Smbios::GetString(SMBIOS_HEADER* header, SMBIOS_STRING string)
 {
-	const auto* start = reinterpret_cast<const char*>(header) + header->Length;
-
-	if (!string || *start == 0)
+	if (!header || string == 0)
 		return nullptr;
+
+	const char* start = reinterpret_cast<const char*>(header) + header->Length;
 
 	while (--string)
 	{
 		start += strlen(start) + 1;
+		if (*start == '\0') // Check for premature end of strings
+			return nullptr;
 	}
 
 	return const_cast<char*>(start);
