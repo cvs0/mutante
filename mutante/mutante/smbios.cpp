@@ -26,18 +26,26 @@ char* Smbios::GetString(SMBIOS_HEADER* header, SMBIOS_STRING string)
 }
 
 /**
- * \brief Replace string at a given location by randomized string with same length
+ * \brief Replace string at a given location by randomized string with the same length
  * \param string Pointer to string (has to be null terminated)
  */
 void Smbios::RandomizeString(char* string)
 {
-	const auto length = static_cast<int>(strlen(string));
+	if (!string)
+		return;
 
-	auto* buffer = static_cast<char*>(ExAllocatePoolWithTag(NonPagedPool, length, POOL_TAG));
-	Utils::RandomText(buffer, length);
+	size_t length = strlen(string);
+	if (length == 0)
+		return;
+
+	char* buffer = static_cast<char*>(ExAllocatePoolWithTag(NonPagedPool, length + 1, POOL_TAG));
+	if (!buffer)
+		return;
+
+	Utils::RandomText(buffer, static_cast<int>(length));
 	buffer[length] = '\0';
 
-	memcpy(string, buffer, length);
+	strcpy_s(string, length + 1, buffer);
 
 	ExFreePool(buffer);
 }
