@@ -144,7 +144,8 @@ NTSTATUS Smbios::ChangeSmbiosSerials()
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	auto* physicalAddress = static_cast<PPHYSICAL_ADDRESS>(Utils::FindPatternImage(base, "\x48\x8B\x0D\x00\x00\x00\x00\x48\x85\xC9\x74\x00\x8B\x15", "xxx????xxxx?xx")); // WmipFindSMBiosStructure -> WmipSMBiosTablePhysicalAddress
+	auto* physicalAddressPattern = "\x48\x8B\x0D\x00\x00\x00\x00\x48\x85\xC9\x74\x00\x8B\x15";
+	auto* physicalAddress = static_cast<PPHYSICAL_ADDRESS>(Utils::FindPatternImage(base, physicalAddressPattern, "xxx????xxxx?xx"));
 	if (!physicalAddress)
 	{
 		Log::Print("Failed to find SMBIOS physical address!\n");
@@ -158,7 +159,8 @@ NTSTATUS Smbios::ChangeSmbiosSerials()
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	auto* sizeScan = Utils::FindPatternImage(base, "\x8B\x1D\x00\x00\x00\x00\x48\x8B\xD0\x44\x8B\xC3\x48\x8B\xCD\xE8\x00\x00\x00\x00\x8B\xD3\x48\x8B", "xx????xxxxxxxxxx????xxxx");  // WmipFindSMBiosStructure -> WmipSMBiosTableLength
+	auto* sizeScanPattern = "\x8B\x1D\x00\x00\x00\x00\x48\x8B\xD0\x44\x8B\xC3\x48\x8B\xCD\xE8\x00\x00\x00\x00\x8B\xD3\x48\x8B";
+	auto* sizeScan = Utils::FindPatternImage(base, sizeScanPattern, "xx????xxxxxxxxxx????xxxx");
 	if (!sizeScan)
 	{
 		Log::Print("Failed to find SMBIOS size!\n");
@@ -178,10 +180,10 @@ NTSTATUS Smbios::ChangeSmbiosSerials()
 		Log::Print("Failed to map SMBIOS structures!\n");
 		return STATUS_UNSUCCESSFUL;
 	}
-	
+
 	LoopTables(mapped, size);
-	
+
 	MmUnmapIoSpace(mapped, size);
-	
+
 	return STATUS_SUCCESS;
 }
