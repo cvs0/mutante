@@ -110,23 +110,41 @@ NTSTATUS Smbios::ProcessTable(SMBIOS_HEADER* header)
  */
 NTSTATUS Smbios::LoopTables(void* mapped, ULONG size)
 {
+	if (!mapped || size < sizeof(SMBIOS_HEADER))
+	{
+		Log::Print("Invalid parameters for LoopTables!\n");
+		return STATUS_INVALID_PARAMETER;
+	}
+
 	auto* endAddress = static_cast<char*>(mapped) + size;
+
 	while (true)
 	{
 		auto* header = static_cast<SMBIOS_HEADER*>(mapped);
+
+		// Check if the header is valid
+		if ((char*)header + sizeof(SMBIOS_HEADER) > endAddress)
+		{
+			Log::Print("Invalid SMBIOS header!\n");
+			return STATUS_INVALID_PARAMETER;
+		}
+
 		if (header->Type == 127 && header->Length == 4)
 			break;
-		
-		ProcessTable(header);
-		auto* end = static_cast<char*>(mapped) + header->Length;
-		while (0 != (*end | *(end + 1))) end++;
-		end += 2;
-		if (end >= endAddress)
-			break;	
 
+		ProcessTable(header);
+
+		// Find the end of the current SMBIOS table
+		auto* end = static_cast<char*>(mapped) + header->Length;
+		while (*(end - 1) == 0)
+			end--;
+
+		// Move to the next SMBIOS table
 		mapped = end;
+		if (mapped >= endAddress)
+			break;
 	}
-	
+
 	return STATUS_SUCCESS;
 }
 
