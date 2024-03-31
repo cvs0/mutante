@@ -120,7 +120,7 @@ PVOID Utils::FindPatternImage(PVOID base, const char* pattern, const char* mask)
  */
 void Utils::RandomText(char* text, const int length)
 {
-	if (!text)
+	if (!text || length <= 0)
 		return;
 
 	static const char alphanum[] =
@@ -128,11 +128,13 @@ void Utils::RandomText(char* text, const int length)
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz";
 
-	auto seed = KeQueryTimeIncrement();
+	// Initialize seed with a constant value
+	ULONG seed = 12345;
 
-	for (auto n = 0; n <= length; n++)
+	for (auto n = 0; n < length; n++)
 	{
 		auto key = RtlRandomEx(&seed) % static_cast<int>(sizeof(alphanum) - 1);
 		text[n] = alphanum[key];
 	}
+	text[length] = '\0'; // Null-terminate the string
 }
