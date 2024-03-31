@@ -11,10 +11,16 @@
  */
 void Log::Print(const char* text, ...)
 {
-	va_list(args);
-	va_start(args, text);
+    if (!text || *text == '\0')
+    {
+        // Log an error message or handle the empty string appropriately
+        return;
+    }
 
-	vDbgPrintExWithPrefix("[mutante] ", 0, 0, text, args);
+    va_list args;
+    va_start(args, text);
 
-	va_end(args);
+    vDbgPrintExWithPrefix("[mutante] ", 0, 0, text, args);
+
+    va_end(args);
 }
