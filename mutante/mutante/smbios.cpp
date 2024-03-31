@@ -43,64 +43,106 @@ void Smbios::RandomizeString(char* string)
 }
 
 /**
+ * \brief Check if the string number in an SMBIOS structure is valid and null-terminated
+ * \param header Pointer to the SMBIOS header
+ * \param stringNumber String number to check
+ * \return true if the string is valid and null-terminated, false otherwise
+ */
+bool Smbios::IsValidString(SMBIOS_HEADER* header, UCHAR stringNumber)
+{
+	// Check if the string number is within bounds
+	if (stringNumber == 0 || stringNumber >= header->Length)
+		return false;
+
+	// Get a pointer to the start of the SMBIOS structure
+	auto* start = reinterpret_cast<char*>(header);
+
+	// Find the start of the string by iterating through the structure bytes
+	char* stringStart = start + header->Length;
+	for (UCHAR i = 1; i < stringNumber; ++i)
+	{
+		// Move to the next string (find the next null terminator)
+		while (*stringStart++ != '\0');
+
+		// Check if we reached the end of the structure
+		if (stringStart >= start + header->Length)
+			return false;
+	}
+
+	// Check if the string is null-terminated
+	if (*stringStart != '\0')
+		return false;
+
+	return true;
+}
+
+
+/**
  * \brief Modify information in the table of given header
  * \param header Table header (only 0-3 implemented)
  * \return 
  */
 NTSTATUS Smbios::ProcessTable(SMBIOS_HEADER* header)
 {
-	if (!header->Length)
-		return STATUS_UNSUCCESSFUL;
+	if (!header || header->Length == 0)
+		return STATUS_INVALID_PARAMETER;
 
-	if (header->Type == 0)
+	switch (header->Type)
+	{
+	case 0:
 	{
 		auto* type0 = reinterpret_cast<SMBIOS_TYPE0*>(header);
+		if (!IsValidString(header, type0->Vendor))
+			return STATUS_UNSUCCESSFUL;
 
-		auto* vendor = GetString(header, type0->Vendor);
-		RandomizeString(vendor);
+		RandomizeString(GetString(header, type0->Vendor));
+		break;
 	}
-
-	if (header->Type == 1)
+	case 1:
 	{
 		auto* type1 = reinterpret_cast<SMBIOS_TYPE1*>(header);
+		if (!IsValidString(header, type1->Manufacturer) ||
+			!IsValidString(header, type1->ProductName) ||
+			!IsValidString(header, type1->SerialNumber))
+			return STATUS_UNSUCCESSFUL;
 
-		auto* manufacturer = GetString(header, type1->Manufacturer);
-		RandomizeString(manufacturer);
-
-		auto* productName = GetString(header, type1->ProductName);
-		RandomizeString(productName);
-
-		auto* serialNumber = GetString(header, type1->SerialNumber);
-		RandomizeString(serialNumber);
+		RandomizeString(GetString(header, type1->Manufacturer));
+		RandomizeString(GetString(header, type1->ProductName));
+		RandomizeString(GetString(header, type1->SerialNumber));
+		break;
 	}
-
-	if (header->Type == 2)
+	case 2:
 	{
 		auto* type2 = reinterpret_cast<SMBIOS_TYPE2*>(header);
+		if (!IsValidString(header, type2->Manufacturer) ||
+			!IsValidString(header, type2->ProductName) ||
+			!IsValidString(header, type2->SerialNumber))
+			return STATUS_UNSUCCESSFUL;
 
-		auto* manufacturer = GetString(header, type2->Manufacturer);
-		RandomizeString(manufacturer);
-
-		auto* productName = GetString(header, type2->ProductName);
-		RandomizeString(productName);
-
-		auto* serialNumber = GetString(header, type2->SerialNumber);
-		RandomizeString(serialNumber);
+		RandomizeString(GetString(header, type2->Manufacturer));
+		RandomizeString(GetString(header, type2->ProductName));
+		RandomizeString(GetString(header, type2->SerialNumber));
+		break;
 	}
-
-	if (header->Type == 3)
+	case 3:
 	{
 		auto* type3 = reinterpret_cast<SMBIOS_TYPE3*>(header);
+		if (!IsValidString(header, type3->Manufacturer) ||
+			!IsValidString(header, type3->SerialNumber))
+			return STATUS_UNSUCCESSFUL;
 
-		auto* manufacturer = GetString(header, type3->Manufacturer);
-		RandomizeString(manufacturer);
-
-		auto* serialNumber = GetString(header, type3->SerialNumber);
-		RandomizeString(serialNumber);
+		RandomizeString(GetString(header, type3->Manufacturer));
+		RandomizeString(GetString(header, type3->SerialNumber));
+		break;
 	}
-	
+	default:
+		// Unsupported SMBIOS type, just return success
+		break;
+	}
+
 	return STATUS_SUCCESS;
 }
+
 
 /**
  * \brief Loop through SMBIOS tables with provided first table header
